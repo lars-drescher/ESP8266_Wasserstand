@@ -57,7 +57,7 @@ void fill(float fillState) {
         fillState = getFillPercentage();
 
         // Wasserstand wird gefüllt
-        write_text("Wasserstand: "+ String(fillState) + "%");
+        write_text("Wasserstand: "+ String(fillState) + "% <br>Entfernung: " + String(entfernung));
         delay(100);
     }
 

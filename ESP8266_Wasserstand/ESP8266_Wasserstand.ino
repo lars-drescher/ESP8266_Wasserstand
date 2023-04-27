@@ -1,10 +1,18 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiServer.h>
-#include <iostream>
 
 #define TRIGPIN 12
 #define ECHOPIN 14
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 long dauer = 0;
 float entfernung = 0.0;
@@ -22,6 +30,14 @@ void setup() {
   pinMode(TRIGPIN, OUTPUT);
   pinMode(ECHOPIN, INPUT);
 
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+  display.display();
+  delay(2000); // Pause for 2 seconds
+
   // Access Point einrichten
   WiFi.softAP(ssid, password);
   IPAddress ip = WiFi.softAPIP();
@@ -32,7 +48,6 @@ void setup() {
   // Server starten
   server.begin();
   Serial.println("Server gestartet.");
-
 }
 
 void loop() {
@@ -50,8 +65,8 @@ void loop() {
   float fillState = getFillPercentage();
 
   // Ausgabe Sensorwert
-  waterlevel = "{{\"waterLevel\":" + String(fillState) + "},{\"distance\":"+ String(entfernung) + "}}";
-  write_text(waterlevel);
+  write_text("{\"waterLevel\":" + String(fillState) + ",\"distance\":"+ String(entfernung) + "}");
+  print_display("Wasserstand: "+ String(fillState) + "% | Entfernung: " + String(entfernung));
 }
 
 void fill(float fillState) {
@@ -60,7 +75,8 @@ void fill(float fillState) {
         fillState = getFillPercentage();
 
         // Wasserstand wird gefüllt
-        write_text("Wasserstand: "+ String(fillState) + "% <br>Entfernung: " + String(entfernung));
+        write_text("{\"waterLevel\":" + String(fillState) + ",\"distance\":"+ String(entfernung) + "}");
+        print_display("Wasserstand: "+ String(fillState) + "% | Entfernung: " + String(entfernung));
         delay(100);
     }
 
@@ -94,17 +110,27 @@ void write_text(String text) {
     return;
   }
 
-//  String response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-//  response += "<!DOCTYPE HTML>\r\n<html>\r\n";
-//  response += "<h1>";
-//  response += text;
-//  response += "</h1>\r\n";
+    String response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
+    response += text;
 //  response += "<script>window.setTimeout( function() { window.location.reload();}, 500);</script>";
-//  response += "</html>\n";
 
-  client.print(text);
+  Serial.println(response);
+  Serial.println(text);
+  client.print(response);
 
   // Warte kurz, damit der Client alle Daten empfangen kann
   delay(1);
   client.stop();  
+}
+
+void print_display(String text) {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0,0);
+  
+  display.println(text);
+
+  display.display();
+  delay(2000);
 }

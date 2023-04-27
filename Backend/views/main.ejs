@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Config</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div style="width: 600px; height: 400px">
+      <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+      const ctx = document.getElementById("myChart");
+      let data = <%= data %>
+
+      const chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: "Water Level",
+              data: [],
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+
+      function loadData() {
+        fetch("/newdata").then((res) => {
+          res.json().then((resJson) => {
+            data = resJson;
+            labels = resJson;
+            let newLabels = [];
+
+            data.array.forEach((e) => {
+              newLabels.push(newLabels.length + 1);
+            });
+            const dataset = {
+              label: "Dataset ",
+              data: Utils.numbers({
+                count: data.labels.length,
+                min: -100,
+                max: 100,
+              }),
+            };
+            labels = newLabels;
+            chart.update();
+          });
+        });
+
+        console.log(data);
+      }
+
+      setInterval(loadData, 2000);
+
+      console.log(chart);
+    </script>
+  </body>
+</html>

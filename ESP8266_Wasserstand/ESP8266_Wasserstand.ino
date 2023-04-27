@@ -1,12 +1,14 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiServer.h>
+#include <iostream>
 
 #define TRIGPIN 12
 #define ECHOPIN 14
 
 long dauer = 0;
 float entfernung = 0.0;
+String waterlevel = "";
 
 // Name und Passwort des Access Points
 const char* ssid = "ESP_FLM";
@@ -48,7 +50,8 @@ void loop() {
   float fillState = getFillPercentage();
 
   // Ausgabe Sensorwert
-  write_text("Wasserstand: "+ String(fillState) + "% <br>Entfernung: " + String(entfernung));
+  waterlevel = "{{\"waterLevel\":" + String(fillState) + "},{\"distance\":"+ String(entfernung) + "}}";
+  write_text(waterlevel);
 }
 
 void fill(float fillState) {
@@ -91,15 +94,15 @@ void write_text(String text) {
     return;
   }
 
-  String response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-  response += "<!DOCTYPE HTML>\r\n<html>\r\n";
-  response += "<h1>";
-  response += text;
-  response += "</h1>\r\n";
-  response += "<script>window.setTimeout( function() { window.location.reload();}, 500);</script>";
-  response += "</html>\n";
+//  String response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
+//  response += "<!DOCTYPE HTML>\r\n<html>\r\n";
+//  response += "<h1>";
+//  response += text;
+//  response += "</h1>\r\n";
+//  response += "<script>window.setTimeout( function() { window.location.reload();}, 500);</script>";
+//  response += "</html>\n";
 
-  client.print(response);
+  client.print(text);
 
   // Warte kurz, damit der Client alle Daten empfangen kann
   delay(1);

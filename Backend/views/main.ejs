@@ -1,29 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Config</title>
+    <title>Chart</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
-    <div style="width: 600px; height: 400px">
+    <h1
+      style="
+        font-family: Arial, Helvetica, sans-serif;
+        text-align: center;
+        font-weight: 400;
+      "
+    >
+      Wassersensor Daten
+    </h1>
+    <div>
       <canvas id="myChart"></canvas>
     </div>
 
     <script>
       const ctx = document.getElementById("myChart");
-      let data = <%= data %>
 
+      let data = [];
+
+      /**
+       * Datensatz laden
+       */
+      function fetchData() {
+        const lastEntry = data[data.length - 1];
+
+        if (lastEntry) {
+          fetch("/newdata?timestamp=" + lastEntry.timeStamp).then((res) => {
+            res.json().then((resJson) => {
+              resJson.forEach((point) => {
+                data.push(point);
+                chart.data.labels.push(point.timeStamp);
+                chart.data.datasets[0].data.push(point.waterLevel);
+              });
+            });
+          });
+        } else {
+          fetch("/newdata").then((res) => {
+            res.json().then((resJson) => {
+              data = resJson;
+              data.forEach((point) => {
+                chart.data.labels.push(point.timeStamp);
+                chart.data.datasets[0].data.push(point.waterLevel);
+              });
+            });
+          });
+        }
+      }
+
+      /**
+       * Chart initialisieren
+       */
       const chart = new Chart(ctx, {
         type: "line",
         data: {
+          labels: [],
           datasets: [
             {
-              label: "Water Level",
+              label: "Wasserstand",
               data: [],
-              borderWidth: 1,
             },
           ],
         },
@@ -36,35 +76,15 @@
         },
       });
 
-      function loadData() {
-        fetch("/newdata").then((res) => {
-          res.json().then((resJson) => {
-            data = resJson;
-            labels = resJson;
-            let newLabels = [];
-
-            data.array.forEach((e) => {
-              newLabels.push(newLabels.length + 1);
-            });
-            const dataset = {
-              label: "Dataset ",
-              data: Utils.numbers({
-                count: data.labels.length,
-                min: -100,
-                max: 100,
-              }),
-            };
-            labels = newLabels;
-            chart.update();
-          });
-        });
-
-        console.log(data);
+      /**
+       * Chart Updaten
+       */
+      function update() {
+        fetchData();
+        chart.update();
       }
 
-      setInterval(loadData, 2000);
-
-      console.log(chart);
+      setInterval(update, 2000);
     </script>
   </body>
 </html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <h1
+      style="
+        font-family: Arial, Helvetica, sans-serif;
+        text-align: center;
+        font-weight: 400;
+      "
+    >
+      Wassersensor Daten
+    </h1>
+    <div>
+      <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+      const ctx = document.getElementById("myChart");
+
+      let data = [];
+
+      /**
+       * Datensatz laden
+       */
+      function fetchData() {
+        const lastEntry = data[data.length - 1];
+
+        if (lastEntry) {
+          fetch("/newdata?timestamp=" + lastEntry.timeStamp).then((res) => {
+            res.json().then((resJson) => {
+              resJson.forEach((point) => {
+                data.push(point);
+                chart.data.labels.push(point.timeStamp);
+                chart.data.datasets[0].data.push(point.waterLevel);
+              });
+            });
+          });
+        } else {
+          fetch("/newdata").then((res) => {
+            res.json().then((resJson) => {
+              data = resJson;
+              data.forEach((point) => {
+                chart.data.labels.push(point.timeStamp);
+                chart.data.datasets[0].data.push(point.waterLevel);
+              });
+            });
+          });
+        }
+      }
+
+      /**
+       * Chart initialisieren
+       */
+      const chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Wasserstand",
+              data: [],
+            },
+          ],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+
+      /**
+       * Chart Updaten
+       */
+      function update() {
+        fetchData();
+        chart.update();
+      }
+
+      setInterval(update, 2000);
+    </script>
+  </body>
+</html>
